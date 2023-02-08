@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-platform-mongodb-replicaset-kube
+spec:
+  ports:
+    - port: 27017
+      nodePort: 30271
+  selector:
+    app: data-platform-mongodb-replicaset-kube
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: data-platform-mongodb-replicaset-kube
+spec:
+  selector:
+    matchLabels:
+      app: data-platform-mongodb-replicaset-kube
+  serviceName: data-platform-mongodb-replicaset-kube
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: data-platform-mongodb-replicaset-kube
+    spec:
+      nodeName: mysql-common
+      hostname: mysql-common
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: mongodb
+          image: mongo:6.0
+          command:
+            - mongod
+            - "--bind_ip_all"
+            - "--replSet"
+            - rs0
+          volumeMounts:
+            - name: mongodb-replicaset-storage
+              mountPath: /data/db
+          ports:
+            - containerPort: 27017
+      volumes:
+        - name: mongodb-replicaset-storage
+          persistentVolumeClaim:
+            claimName: data-platform-mongodb-replicaset-kube-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: data-platform-mongodb-replicaset-kube-pv-volume
+  labels:
+    type: local
+  namespace: default
+spec:
+  storageClassName: data-platform-mongodb-replicaset-kube
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data-platform-mongodb-replicaset-kube-pv-volume"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-platform-mongodb-replicaset-kube-pv-claim
+  namespace: default
+spec:
+  storageClassName: data-platform-mongodb-replicaset-kube
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
