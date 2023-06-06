@@ -25,7 +25,7 @@ spec:
       labels:
         app: data-platform-mongodb-replicaset-kube
     spec:
-      nodeName: mysql-data
+      nodeName: worker
       terminationGracePeriodSeconds: 10
       containers:
         - name: mongodb
